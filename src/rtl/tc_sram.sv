@@ -57,6 +57,7 @@ module tc_sram #(
   parameter int unsigned NumPorts     = 32'd2,    // Number of read and write ports
   parameter int unsigned Latency      = 32'd1,    // Latency when the read data is available
   parameter              SimInit      = "none",   // Simulation initialization
+  parameter              SimFile      = "",       // File to initialize simulation with
   parameter bit          PrintSimCfg  = 1'b0,     // Print configuration
   // DEPENDENT PARAMETERS, DO NOT OVERWRITE!
   parameter int unsigned AddrWidth = (NumWords > 32'd1) ? $clog2(NumWords) : 32'd1,
@@ -85,12 +86,19 @@ module tc_sram #(
   // SRAM simulation initialization
   data_t [NumWords-1:0] init_val;
   initial begin : proc_sram_init
+    logic [DataWidth-1:0] sim_file [0:NumWords-1];
+    for (int unsigned i = 0; i < NumWords; i++) sim_file[i] = '0;
+    if (SimInit == "file") begin
+      $readmemh(SimFile, sim_file);
+      $display("[SRAM] Using following file: %s\n",SimFile);
+    end
     for (int unsigned i = 0; i < NumWords; i++) begin
       for (int unsigned j = 0; j < DataWidth; j++) begin
         case (SimInit)
           "zeros":  init_val[i][j] = 1'b0;
           "ones":   init_val[i][j] = 1'b1;
           "random": init_val[i][j] = $urandom();
+          "file":   init_val[i][j] = sim_file[i][j];
           default:  init_val[i][j] = 1'bx;
         endcase
       end
